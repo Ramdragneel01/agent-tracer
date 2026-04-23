@@ -7,118 +7,118 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
  * Polls and renders the latest agent trace steps.
  */
 export default function App() {
-  const [steps, setSteps] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState("");
+    const [steps, setSteps] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [lastUpdated, setLastUpdated] = useState("");
 
-  useEffect(() => {
-    let active = true;
+    useEffect(() => {
+        let active = true;
 
-    async function fetchTrace() {
-      try {
-        const response = await fetch(`${API_BASE}/trace/latest`);
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}`);
+        async function fetchTrace() {
+            try {
+                const response = await fetch(`${API_BASE}/trace/latest`);
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}`);
+                }
+
+                const payload = await response.json();
+                if (!active) {
+                    return;
+                }
+
+                setSteps(payload.steps || []);
+                setError("");
+                setLastUpdated(new Date().toLocaleTimeString());
+            } catch (err) {
+                if (active) {
+                    setError(err instanceof Error ? err.message : "Failed to fetch trace");
+                }
+            } finally {
+                if (active) {
+                    setLoading(false);
+                }
+            }
         }
 
-        const payload = await response.json();
-        if (!active) {
-          return;
-        }
+        fetchTrace();
+        const timer = window.setInterval(fetchTrace, 5000);
 
-        setSteps(payload.steps || []);
-        setError("");
-        setLastUpdated(new Date().toLocaleTimeString());
-      } catch (err) {
-        if (active) {
-          setError(err instanceof Error ? err.message : "Failed to fetch trace");
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
+        return () => {
+            active = false;
+            window.clearInterval(timer);
+        };
+    }, []);
 
-    fetchTrace();
-    const timer = window.setInterval(fetchTrace, 5000);
+    const summary = useMemo(() => {
+        const totalLatency = steps.reduce((acc, item) => acc + (item.latency_ms || 0), 0);
+        const totalTokens = steps.reduce((acc, item) => acc + (item.token_usage || 0), 0);
+        const errors = steps.filter((item) => item.status === "error").length;
 
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, []);
+        return {
+            count: steps.length,
+            totalLatency: totalLatency.toFixed(2),
+            totalTokens,
+            errors
+        };
+    }, [steps]);
 
-  const summary = useMemo(() => {
-    const totalLatency = steps.reduce((acc, item) => acc + (item.latency_ms || 0), 0);
-    const totalTokens = steps.reduce((acc, item) => acc + (item.token_usage || 0), 0);
-    const errors = steps.filter((item) => item.status === "error").length;
+    return (
+        <main className="app-shell">
+            <header className="hero">
+                <p className="eyebrow">Agent Observability</p>
+                <h1>agent-tracer timeline</h1>
+                <p className="subtitle">Inspect every node transition with latency and token context.</p>
+            </header>
 
-    return {
-      count: steps.length,
-      totalLatency: totalLatency.toFixed(2),
-      totalTokens,
-      errors
-    };
-  }, [steps]);
+            <section className="summary-grid" aria-label="Trace summary metrics">
+                <MetricCard label="Steps" value={summary.count} />
+                <MetricCard label="Latency (ms)" value={summary.totalLatency} />
+                <MetricCard label="Tokens" value={summary.totalTokens} />
+                <MetricCard label="Errors" value={summary.errors} />
+            </section>
 
-  return (
-    <main className="app-shell">
-      <header className="hero">
-        <p className="eyebrow">Agent Observability</p>
-        <h1>agent-tracer timeline</h1>
-        <p className="subtitle">Inspect every node transition with latency and token context.</p>
-      </header>
+            <section className="meta-row">
+                <span>API: {API_BASE}</span>
+                <span>Last update: {lastUpdated || "-"}</span>
+            </section>
 
-      <section className="summary-grid" aria-label="Trace summary metrics">
-        <MetricCard label="Steps" value={summary.count} />
-        <MetricCard label="Latency (ms)" value={summary.totalLatency} />
-        <MetricCard label="Tokens" value={summary.totalTokens} />
-        <MetricCard label="Errors" value={summary.errors} />
-      </section>
+            {error ? <p className="error-banner" role="alert">{error}</p> : null}
+            {loading ? <p className="loading">Loading trace...</p> : null}
 
-      <section className="meta-row">
-        <span>API: {API_BASE}</span>
-        <span>Last update: {lastUpdated || "-"}</span>
-      </section>
+            <section className="timeline" aria-label="Trace timeline">
+                {steps.length === 0 && !loading ? (
+                    <p className="empty">No trace steps yet. POST to /trace to populate the timeline.</p>
+                ) : null}
 
-      {error ? <p className="error-banner" role="alert">{error}</p> : null}
-      {loading ? <p className="loading">Loading trace...</p> : null}
-
-      <section className="timeline" aria-label="Trace timeline">
-        {steps.length === 0 && !loading ? (
-          <p className="empty">No trace steps yet. POST to /trace to populate the timeline.</p>
-        ) : null}
-
-        {steps.map((step, index) => (
-          <article key={`${step.timestamp || "no-ts"}-${index}`} className={`trace-card ${step.status}`}>
-            <div className="trace-card-top">
-              <h2>{step.node_name}</h2>
-              <span className={`status-pill ${step.status}`}>{step.status}</span>
-            </div>
-            <p className="trace-meta">
-              {Number(step.latency_ms || 0).toFixed(2)} ms • {step.token_usage || 0} tokens
-            </p>
-            <details>
-              <summary>Input/Output payload</summary>
-              <pre>{JSON.stringify({ input_state: step.input_state, output_state: step.output_state, error: step.error }, null, 2)}</pre>
-            </details>
-          </article>
-        ))}
-      </section>
-    </main>
-  );
+                {steps.map((step, index) => (
+                    <article key={`${step.timestamp || "no-ts"}-${index}`} className={`trace-card ${step.status}`}>
+                        <div className="trace-card-top">
+                            <h2>{step.node_name}</h2>
+                            <span className={`status-pill ${step.status}`}>{step.status}</span>
+                        </div>
+                        <p className="trace-meta">
+                            {Number(step.latency_ms || 0).toFixed(2)} ms • {step.token_usage || 0} tokens
+                        </p>
+                        <details>
+                            <summary>Input/Output payload</summary>
+                            <pre>{JSON.stringify({ input_state: step.input_state, output_state: step.output_state, error: step.error }, null, 2)}</pre>
+                        </details>
+                    </article>
+                ))}
+            </section>
+        </main>
+    );
 }
 
 /**
  * Displays a single summary metric card.
  */
 function MetricCard({ label, value }) {
-  return (
-    <article className="metric-card">
-      <p>{label}</p>
-      <h3>{value}</h3>
-    </article>
-  );
+    return (
+        <article className="metric-card">
+            <p>{label}</p>
+            <h3>{value}</h3>
+        </article>
+    );
 }

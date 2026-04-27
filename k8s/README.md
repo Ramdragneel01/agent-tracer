@@ -2,6 +2,12 @@
 
 This directory provides a production-oriented baseline deployment for agent-tracer.
 
+Use environment overlays for rollout:
+
+1. `k8s/overlays/dev`
+2. `k8s/overlays/stage`
+3. `k8s/overlays/prod`
+
 ## Included Resources
 
 1. Backend Deployment, Service, HPA, probes.
@@ -57,8 +63,22 @@ kubectl -n agent-tracer create secret generic agent-tracer-backend-secret \
 
 ## Deploy
 
+Apply one environment overlay:
+
 ```bash
-kubectl apply -k k8s/
+kubectl apply -k k8s/overlays/dev
+kubectl apply -k k8s/overlays/stage
+kubectl apply -k k8s/overlays/prod
+```
+
+Or render manifests for review:
+
+```bash
+kubectl kustomize k8s/overlays/prod
+```
+
+```bash
+kubectl apply -k k8s/overlays/prod
 ```
 
 ## Verify

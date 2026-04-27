@@ -103,10 +103,10 @@ Kubernetes manifests are available in `k8s/` and include Deployments, Services, 
 kubectl create namespace agent-tracer
 kubectl -n agent-tracer create secret generic agent-tracer-backend-secret \
 	--from-literal=AGENT_TRACER_API_KEY='<strong-secret>'
-kubectl apply -k k8s/
+kubectl apply -k k8s/overlays/prod
 ```
 
-See `k8s/README.md` for image/host configuration and rollout verification commands.
+See `k8s/README.md` for dev/stage/prod overlay commands and rollout verification.
 
 ## Production Checklist
 

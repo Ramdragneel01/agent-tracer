@@ -72,7 +72,17 @@ kubectl -n agent-tracer create secret generic agent-tracer-backend-secret \
 5. Apply manifests:
 
 ```bash
-kubectl apply -k k8s/
+kubectl apply -k k8s/overlays/dev
+kubectl apply -k k8s/overlays/stage
+kubectl apply -k k8s/overlays/prod
+```
+
+Use the command for the single target environment in your rollout stage.
+
+Optional manifest preview:
+
+```bash
+kubectl kustomize k8s/overlays/prod
 ```
 
 6. Verify rollout:

@@ -7,6 +7,7 @@ import inspect
 import json
 import threading
 import time
+from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional
@@ -33,9 +34,13 @@ class TraceStep:
 class AgentTracer:
     """Instruments graph nodes and stores timeline-friendly trace steps."""
 
-    def __init__(self) -> None:
-        """Initializes an empty tracer state."""
-        self._steps: List[TraceStep] = []
+    def __init__(self, max_steps: int = 10_000) -> None:
+        """Initializes tracer state with bounded in-memory retention."""
+        if max_steps < 1:
+            raise ValueError("max_steps must be >= 1")
+
+        self._max_steps = max_steps
+        self._steps: deque[TraceStep] = deque(maxlen=max_steps)
         self._lock = threading.Lock()
 
     def clear(self) -> None:
@@ -52,6 +57,10 @@ class AgentTracer:
         """Appends an externally provided trace step."""
         with self._lock:
             self._steps.append(step)
+
+    def get_max_steps(self) -> int:
+        """Returns the configured in-memory retention ceiling for trace steps."""
+        return self._max_steps
 
     def trace(self, graph: Any) -> Any:
         """Instruments graph nodes in place and returns the same graph object."""

@@ -42,6 +42,19 @@ def test_health_endpoint_returns_ok() -> None:
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["service"] == "agent-tracer"
+    assert "uptime_seconds" in payload
+
+
+def test_ready_endpoint_returns_runtime_config() -> None:
+    """Ensures readiness endpoint exposes deploy-relevant runtime state."""
+
+    response = client.get("/ready")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ready"
+    assert payload["service"] == "agent-tracer"
+    assert "max_trace_steps" in payload
+    assert "rate_limit_per_minute" in payload
 
 
 def test_trace_ingestion_and_latest_retrieval() -> None:
@@ -188,3 +201,14 @@ def test_trace_write_rate_limit_returns_429(monkeypatch) -> None:
         },
     )
     assert second.status_code == 429
+
+
+def test_responses_include_request_and_security_headers() -> None:
+    """Ensures baseline response security and request metadata headers are set."""
+
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("X-Request-ID")
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("Cache-Control") == "no-store"

@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from src.tracer import AgentTracer
+from src.tracer import AgentTracer, TraceStep
 
 
 class DummyGraph:
@@ -119,3 +119,55 @@ def test_export_json_returns_serialized_trace() -> None:
     assert isinstance(parsed, list)
     assert parsed
     assert parsed[0]["node_name"] == "retrieve"
+
+
+def test_tracer_respects_max_steps_retention() -> None:
+    """Ensures oldest trace steps are evicted when retention limit is reached."""
+
+    tracer = AgentTracer(max_steps=2)
+    tracer.add_step(
+        TraceStep(
+            node_name="first",
+            input_state={},
+            output_state={},
+            latency_ms=1.0,
+            token_usage=1,
+            timestamp="2026-01-01T00:00:00+00:00",
+            status="success",
+            error=None,
+        )
+    )
+    tracer.add_step(
+        TraceStep(
+            node_name="second",
+            input_state={},
+            output_state={},
+            latency_ms=1.0,
+            token_usage=1,
+            timestamp="2026-01-01T00:00:01+00:00",
+            status="success",
+            error=None,
+        )
+    )
+    tracer.add_step(
+        TraceStep(
+            node_name="third",
+            input_state={},
+            output_state={},
+            latency_ms=1.0,
+            token_usage=1,
+            timestamp="2026-01-01T00:00:02+00:00",
+            status="success",
+            error=None,
+        )
+    )
+
+    assert tracer.get_max_steps() == 2
+    assert [step.node_name for step in tracer.get_steps()] == ["second", "third"]
+
+
+def test_tracer_rejects_invalid_max_steps() -> None:
+    """Ensures tracer rejects non-positive retention settings."""
+
+    with pytest.raises(ValueError):
+        AgentTracer(max_steps=0)

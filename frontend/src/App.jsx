@@ -17,7 +17,12 @@ export default function App() {
 
         async function fetchTrace() {
             try {
-                const response = await fetch(`${API_BASE}/trace/latest`);
+                const response = await fetch(`${API_BASE}/trace/latest`, {
+                    cache: "no-store",
+                    headers: {
+                        Accept: "application/json"
+                    }
+                });
                 if (!response.ok) {
                     throw new Error(`Request failed with status ${response.status}`);
                 }
@@ -42,7 +47,12 @@ export default function App() {
         }
 
         fetchTrace();
-        const timer = window.setInterval(fetchTrace, 5000);
+        const timer = window.setInterval(() => {
+            if (document.visibilityState === "hidden") {
+                return;
+            }
+            fetchTrace();
+        }, 5000);
 
         return () => {
             active = false;

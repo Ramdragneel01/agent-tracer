@@ -88,3 +88,19 @@ jobs:
       - name: Frontend dependency audit
         working-directory: frontend
         run: npm audit --omit=dev --audit-level=high
+
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [backend, frontend]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend container image
+        run: docker build -t agent-tracer-backend:test -f Dockerfile .
+
+      - name: Build frontend container image
+        run: docker build -t agent-tracer-frontend:test -f frontend/Dockerfile
+          --build-arg VITE_API_BASE_URL=http://localhost:8000 .

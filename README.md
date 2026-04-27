@@ -34,6 +34,13 @@ Optional security env vars:
 ```bash
 AGENT_TRACER_API_KEY=
 AGENT_TRACER_RATE_LIMIT_PER_MINUTE=600
+AGENT_TRACER_MAX_STEPS=10000
+AGENT_TRACER_ALLOWED_ORIGINS=http://127.0.0.1:4178,http://localhost:4178
+AGENT_TRACER_ALLOWED_HOSTS=*
+AGENT_TRACER_ENABLE_DOCS=true
+AGENT_TRACER_ENABLE_GZIP=true
+AGENT_TRACER_HSTS_SECONDS=0
+AGENT_TRACER_LOG_LEVEL=INFO
 ```
 
 ### Run Demo Graph
@@ -59,11 +66,34 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 ## API Endpoints
 
 - `GET /health` - service health summary.
+- `GET /ready` - readiness summary for orchestrators.
 - `POST /trace` - ingest one or more trace steps (protected when API key is configured).
 - `GET /trace/latest` - fetch latest trace timeline (protected when API key is configured).
 - `DELETE /trace` - clear in-memory trace state (protected when API key is configured).
 
 Write endpoints are rate-limited per client using in-memory throttling.
+Trace retention is bounded in memory by `AGENT_TRACER_MAX_STEPS`.
+
+## Production Deploy (Docker Compose)
+
+Create a deployment env file from `.env.example` and set production-safe values.
+
+```bash
+cp .env.example .env
+```
+
+Build and run both backend and frontend:
+
+```bash
+docker compose up --build -d
+```
+
+Validate service health:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/ready
+```
 
 ## Example Instrumentation
 

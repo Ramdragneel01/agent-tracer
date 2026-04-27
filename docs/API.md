@@ -18,7 +18,23 @@ Response:
 {
   "status": "ok",
   "service": "agent-tracer",
-  "trace_steps": 0
+  "trace_steps": 0,
+  "uptime_seconds": 12.314
+}
+```
+
+### `GET /ready`
+
+Readiness endpoint returning deploy/runtime controls.
+
+Response:
+
+```json
+{
+  "status": "ready",
+  "service": "agent-tracer",
+  "max_trace_steps": 10000,
+  "rate_limit_per_minute": 600
 }
 ```
 
@@ -48,7 +64,8 @@ Response:
 ```json
 {
   "stored": 1,
-  "total_steps": 1
+  "total_steps": 1,
+  "max_trace_steps": 10000
 }
 ```
 
@@ -56,6 +73,14 @@ Possible errors:
 
 1. `401 Unauthorized` when API key is configured and missing/invalid.
 2. `429 Too Many Requests` when write limit is exceeded.
+
+## Response Headers
+
+All API responses include:
+
+1. `X-Request-ID` for request correlation.
+2. Baseline security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`).
+3. `Cache-Control: no-store` for dynamic payload safety.
 3. `422 Unprocessable Entity` for validation errors.
 
 ### `GET /trace/latest`

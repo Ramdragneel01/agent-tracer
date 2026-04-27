@@ -29,10 +29,13 @@ agent-tracer provides trace instrumentation, ingestion APIs, and a timeline UI f
 3. Write rate limiter enforces per-client minute quotas.
 4. Steps are persisted in in-memory tracer store.
 5. Clients retrieve latest timeline via `GET /trace/latest`.
+6. Retention is bounded by `AGENT_TRACER_MAX_STEPS` to prevent unbounded memory growth.
 
 ## Security and Reliability Controls
 
 1. Optional API key on protected endpoints using `X-API-Key`.
 2. In-memory per-client write throttling.
 3. Defensive payload validation through Pydantic models.
-4. Response headers for baseline browser and content security hardening.
+4. Trusted host and CORS allow-lists from environment settings.
+5. Response headers for baseline browser and content security hardening.
+6. Readiness endpoint (`GET /ready`) for orchestrator probes.

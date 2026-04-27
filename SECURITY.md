@@ -19,5 +19,7 @@ Include:
 
 1. Set `AGENT_TRACER_API_KEY` in environments exposed beyond trusted internal networks.
 2. Tune `AGENT_TRACER_RATE_LIMIT_PER_MINUTE` based on expected traffic.
-3. Avoid storing sensitive payloads in trace states when not required.
-4. Restrict access to trace retrieval endpoints in production deployments.
+3. Set explicit `AGENT_TRACER_ALLOWED_HOSTS` and `AGENT_TRACER_ALLOWED_ORIGINS` values.
+4. Keep `AGENT_TRACER_MAX_STEPS` aligned with retention/privacy requirements.
+5. Avoid storing sensitive payloads in trace states when not required.
+6. Restrict access to trace retrieval endpoints in production deployments.

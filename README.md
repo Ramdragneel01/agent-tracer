@@ -95,6 +95,23 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+## Kubernetes Deploy
+
+Kubernetes manifests are available in `k8s/` and include Deployments, Services, HPAs, probes, and Ingress.
+
+```bash
+kubectl create namespace agent-tracer
+kubectl -n agent-tracer create secret generic agent-tracer-backend-secret \
+	--from-literal=AGENT_TRACER_API_KEY='<strong-secret>'
+kubectl apply -k k8s/
+```
+
+See `k8s/README.md` for image/host configuration and rollout verification commands.
+
+## Production Checklist
+
+Use `docs/PRODUCTION_CHECKLIST.md` before and after each production release.
+
 ## Example Instrumentation
 
 ```python

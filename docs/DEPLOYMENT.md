@@ -56,6 +56,42 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+## Kubernetes Deployment
+
+1. Build and publish immutable image tags for backend and frontend.
+2. Update image references in `k8s/backend-deployment.yaml` and `k8s/frontend-deployment.yaml`.
+3. Configure hostnames in `k8s/backend-configmap.yaml` and `k8s/ingress.yaml`.
+4. Create namespace and backend API key secret:
+
+```bash
+kubectl create namespace agent-tracer
+kubectl -n agent-tracer create secret generic agent-tracer-backend-secret \
+	--from-literal=AGENT_TRACER_API_KEY='<strong-secret>'
+```
+
+5. Apply manifests:
+
+```bash
+kubectl apply -k k8s/
+```
+
+6. Verify rollout:
+
+```bash
+kubectl -n agent-tracer get pods,svc,ingress,hpa
+kubectl -n agent-tracer rollout status deploy/agent-tracer-backend
+kubectl -n agent-tracer rollout status deploy/agent-tracer-frontend
+```
+
+7. Roll back if needed:
+
+```bash
+kubectl -n agent-tracer rollout undo deploy/agent-tracer-backend
+kubectl -n agent-tracer rollout undo deploy/agent-tracer-frontend
+```
+
+For full pre/post release controls, use `docs/PRODUCTION_CHECKLIST.md`.
+
 ## Runtime Security Notes
 
 1. Keep `AGENT_TRACER_API_KEY` in a secret manager, not in source control.

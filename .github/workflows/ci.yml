@@ -46,6 +46,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install coverage tooling
+        run: python -m pip install --upgrade pytest-cov
+
       - name: Backend compile check
         run: python -m compileall -q api src tests
 
@@ -53,7 +56,7 @@ jobs:
         run: python -m pip check
 
       - name: Run backend tests
-        run: pytest -q --maxfail=1
+        run: pytest -q --maxfail=1 --cov=api --cov=src --cov-report=term-missing:skip-covered --cov-fail-under=50
 
       - name: Backend dependency audit
         run: |

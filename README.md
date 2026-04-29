@@ -124,7 +124,7 @@ traced_graph.invoke({"query": "hello"})
 print(tracer.export_json())
 ```
 
-## Validation
+## Testing
 
 ```bash
 pytest -q
@@ -167,7 +167,7 @@ Add terminal timeline screenshot and frontend timeline screenshot here.
 2. Built-in rate limiting is per-instance and not distributed across replicas.
 3. API key auth is shared-secret based and not role-aware.
 
-## Next Roadmap
+## Roadmap
 
 1. Add persistent trace storage backend with retention policies.
 2. Add optional role-based auth integration for multi-tenant access.

@@ -298,6 +298,13 @@ def health() -> dict[str, Any]:
     }
 
 
+@app.get("/healthz")
+def healthz() -> dict[str, Any]:
+    """Compatibility alias for liveness probes expecting /healthz."""
+
+    return health()
+
+
 @app.get("/ready")
 def ready() -> dict[str, Any]:
     """Return readiness state for deployment orchestrators."""
@@ -308,6 +315,13 @@ def ready() -> dict[str, Any]:
         "max_trace_steps": tracer.get_max_steps(),
         "rate_limit_per_minute": settings.rate_limit_per_minute,
     }
+
+
+@app.get("/readyz")
+def readyz() -> dict[str, Any]:
+    """Compatibility alias for readiness probes expecting /readyz."""
+
+    return ready()
 
 
 @app.post("/trace")

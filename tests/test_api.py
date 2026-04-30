@@ -57,6 +57,18 @@ def test_ready_endpoint_returns_runtime_config() -> None:
     assert "rate_limit_per_minute" in payload
 
 
+def test_probe_alias_endpoints_return_runtime_state() -> None:
+    """Ensures /healthz and /readyz aliases are available for probe compatibility."""
+
+    health_alias = client.get("/healthz")
+    assert health_alias.status_code == 200
+    assert health_alias.json()["status"] == "ok"
+
+    ready_alias = client.get("/readyz")
+    assert ready_alias.status_code == 200
+    assert ready_alias.json()["status"] == "ready"
+
+
 def test_trace_ingestion_and_latest_retrieval() -> None:
     """Ensures trace steps can be ingested and fetched."""
 
@@ -154,6 +166,47 @@ def test_trace_requires_api_key_when_configured(monkeypatch) -> None:
     assert authorized.status_code == 200
 
 
+def test_phase1_auth_required_contract(monkeypatch) -> None:
+    """Phase-1 contract selector for auth enforcement on protected endpoints."""
+
+    _override_settings(monkeypatch, api_key="phase1-secret")
+
+    unauthorized = client.post(
+        "/trace",
+        json={
+            "steps": [
+                {
+                    "node_name": "retrieve",
+                    "input_state": {"query": "hello"},
+                    "output_state": {"docs": ["d1"]},
+                    "latency_ms": 3.5,
+                    "token_usage": 21,
+                    "status": "success",
+                }
+            ]
+        },
+    )
+    assert unauthorized.status_code == 401
+
+    authorized = client.post(
+        "/trace",
+        headers={"X-API-Key": "phase1-secret"},
+        json={
+            "steps": [
+                {
+                    "node_name": "retrieve",
+                    "input_state": {"query": "hello"},
+                    "output_state": {"docs": ["d1"]},
+                    "latency_ms": 3.5,
+                    "token_usage": 21,
+                    "status": "success",
+                }
+            ]
+        },
+    )
+    assert authorized.status_code == 200
+
+
 def test_health_is_public_when_api_key_enabled(monkeypatch) -> None:
     """Ensures health endpoint remains public for probes and uptime checks."""
 
@@ -201,6 +254,31 @@ def test_trace_write_rate_limit_returns_429(monkeypatch) -> None:
         },
     )
     assert second.status_code == 429
+
+
+def test_phase1_error_contract_response() -> None:
+    """Phase-1 contract selector for structured error responses."""
+
+    response = client.post(
+        "/trace",
+        json={
+            "steps": [
+                {
+                    "node_name": "retrieve",
+                    "input_state": {"query": "hello"},
+                    "output_state": {"docs": ["d1"]},
+                    "latency_ms": -1,
+                    "token_usage": 21,
+                    "status": "success",
+                }
+            ]
+        },
+    )
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert "detail" in payload
+    assert response.headers.get("X-Request-ID")
 
 
 def test_responses_include_request_and_security_headers() -> None:
